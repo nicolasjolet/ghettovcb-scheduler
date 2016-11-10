@@ -1,8 +1,9 @@
-#!/usr/bin/env ruby
+$LOAD_PATH << __dir__
+
 require 'classes/config'
 require 'classes/scheduler'
 
-config = Config::load('../config/config.yaml')
+config = Config::load(File.join(__dir__, '../config/config.yaml'))
 
 scheduler = Scheduler.new(config.tasks)
 
