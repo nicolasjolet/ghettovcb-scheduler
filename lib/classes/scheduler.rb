@@ -1,5 +1,5 @@
 class Scheduler
-	def initialize(tasks:)
+	def initialize(tasks)
 		@tasks = tasks
 	end
 	
