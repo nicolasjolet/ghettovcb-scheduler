@@ -7,4 +7,4 @@ config = Config::load(File.join(__dir__, '../config/config.yaml'))
 
 scheduler = Scheduler.new(config.tasks)
 
-# scheduler.run_tasks
+scheduler.run_tasks

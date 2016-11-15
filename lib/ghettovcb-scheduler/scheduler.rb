@@ -1,8 +1,9 @@
 require 'net/ssh'
 
 class Scheduler
-	def initialize(tasks)
+	def initialize(tasks, default_user)
 		@tasks = tasks
+		@default_user = default_user
 	end
 	
 	def run_tasks
@@ -12,10 +13,12 @@ class Scheduler
 		@tasks.each do |task|
 			threads << Thread.new {
 				task.servers.each do |server|
-					Net::SSH.start(server) do |ssh|
-					
+					Net::SSH.start(server, @default_user) do |ssh|
+						# ensure the lastest version of the backup script is on the server
+						puts ssh.exec!(hostname)
+						# prepare the config files
+						# 
 					end
-					system()
 				end
 			}
 
