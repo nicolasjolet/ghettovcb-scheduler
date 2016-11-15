@@ -28,6 +28,7 @@ end
 class Config
 	attr_accessor :tasks
 	attr_accessor :default_user
+	attr_accessor :log_level
 	
 	def initialize
 		self.tasks = []
@@ -37,6 +38,7 @@ class Config
 		ret = Config.new
 		raw_yaml = YAML::load_file(path)
 		
+		ret.log_level = raw_yaml['log_level']
 		ret.default_user = raw_yaml['default_user']
 		# load tasks
 		raw_yaml['tasks'].each {|k, v| 

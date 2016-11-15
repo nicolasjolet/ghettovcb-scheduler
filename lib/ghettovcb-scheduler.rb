@@ -7,7 +7,7 @@ require 'logger'
 logger = Logger.new(STDOUT)
 
 config = Config::load(File.join(__dir__, '../config/config.yaml'))
-logger.level = Logger.const_get config.log_level
+logger.level = Logger.const_get(config.log_level)
 
 logger.debug(config.inspect)
 
