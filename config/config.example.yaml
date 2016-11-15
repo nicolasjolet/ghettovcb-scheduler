@@ -1,4 +1,6 @@
 "default_user": root
+# possible values : UNKNOWN, FATAL, ERROR, WARN, INFO, DEBUG
+log_level: "ERROR"
 tasks:
     task1:
     -   ip: 1.1.1.1
