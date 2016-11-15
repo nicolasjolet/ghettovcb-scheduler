@@ -5,6 +5,6 @@ require 'ghettovcb-scheduler/scheduler'
 
 config = Config::load(File.join(__dir__, '../config/config.yaml'))
 
-scheduler = Scheduler.new(config.tasks)
+scheduler = Scheduler.new(config.tasks, config.default_user)
 
 scheduler.run_tasks

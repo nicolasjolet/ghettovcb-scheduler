@@ -12,7 +12,7 @@ class TaskServer
 	
 	def all_vm?
 		# returns true if array is empty or definded to 'all'
-		self.vms_included.to_a.empty? || ['all', 'ALL', '*'].include? self.vms_included
+		self.vms_included.to_a.empty? || ['all', 'ALL', '*'].include?(self.vms_included)
 	end
 end
 
