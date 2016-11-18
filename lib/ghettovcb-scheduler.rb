@@ -1,4 +1,4 @@
-$LOAD_PATH << __dir__
+#$LOAD_PATH << __dir__
 
 require 'ghettovcb-scheduler/config'
 require 'ghettovcb-scheduler/scheduler'
@@ -6,7 +6,7 @@ require 'logger'
 
 logger = Logger.new(STDOUT)
 
-config = Config::load(File.join(__dir__, '../config/config.yaml'))
+config = Config::load(File.expand_path('../config/config.yaml', __dir__))
 logger.level = Logger.const_get(config.log_level)
 
 logger.debug(config.inspect)
