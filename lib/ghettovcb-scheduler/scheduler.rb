@@ -13,10 +13,10 @@ class Scheduler
 		@tasks.each do |task|
       threads << Thread.new do
 				task.servers.each do |server|
-					Net::SSH.start(server, @default_user) do |ssh|
-						# ensure the latest version of the backup script is on the server
-						puts ssh.exec!(hostname)
-						# prepare the config files
+					Net::SSH.start(server.ip, @default_user) do |ssh|
+						ssh.exec!('mkdir /tmp/ghettovcb && cp -fR /vmfs/volumes/scripts/ghettovcb-scheduler/bin/ghettovcb /tmp')
+						# create the config files
+
 						#
 					end
 				end

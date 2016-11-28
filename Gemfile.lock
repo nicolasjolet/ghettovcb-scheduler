@@ -1,0 +1,18 @@
+GIT
+  remote: git://github.com/net-ssh/net-ssh.git
+  revision: 397f6a8a7fbe6862601b562c1cba64d19fa15a63
+  specs:
+    net-ssh (4.0.0.beta3)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  x64-mingw32
+
+DEPENDENCIES
+  net-ssh!
+
+BUNDLED WITH
+   1.13.6
