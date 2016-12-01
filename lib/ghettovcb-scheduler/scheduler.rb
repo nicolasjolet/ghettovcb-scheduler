@@ -1,32 +1,20 @@
-require 'net/ssh'
-
 class Scheduler
-	def initialize(tasks, default_user)
+	def initialize(tasks)
 		@tasks = tasks
-		@default_user = default_user
 	end
-	
-	def run_tasks
+
+  def run_tasks_server
 		# TODO: sanatize : ensure we do not backup same target (server+vm) in different tasks
 		threads = []
 
 		@tasks.each do |task|
       threads << Thread.new do
-				task.servers.each do |server|
-					Net::SSH.start(server.ip, @default_user) do |ssh|
-						ssh.exec!('mkdir /tmp/ghettovcb && cp -fR /vmfs/volumes/scripts/ghettovcb-scheduler/bin/ghettovcb /tmp')
-						# create the config files
-
-						#
-					end
-				end
+        task.servers.each do |server|
+				  yield server
+        end
 			end
     end
-    threads.each{|thd| thd.join}
-	end
-	
-	def task_status (task)
-
+    threads.each(&:join)
 	end
 	
 	def length

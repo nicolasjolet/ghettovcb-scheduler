@@ -1,8 +1,9 @@
 $LOAD_PATH << __dir__
 
+require 'logger'
 require 'ghettovcb-scheduler/config'
 require 'ghettovcb-scheduler/scheduler'
-require 'logger'
+require 'ghettovcb-scheduler/hypervisor'
 
 logger = Logger.new(STDOUT)
 
@@ -11,6 +12,14 @@ logger.level = Logger.const_get(config.log_level)
 
 logger.debug(config.inspect)
 
-scheduler = Scheduler.new(config.tasks, config.default_user)
+scheduler = Scheduler.new(config.tasks)
 
-scheduler.run_tasks
+scheduler.run_tasks_server do |server_def|
+    Hypervisor.connect(server_def.hostname, config.default_user) do |server|
+      puts server.hostname
+      puts server.copy_ghetto_script
+      # create the config files
+
+      #
+    end
+end

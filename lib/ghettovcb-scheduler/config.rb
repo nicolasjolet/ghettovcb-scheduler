@@ -1,20 +1,28 @@
 require 'yaml'
+require 'ghettovcb-scheduler/core_ext'
 
 class TaskServer
-	attr_accessor :ip, :vms_included, :vms_excluded
+	attr_accessor :hostname, :vms_included, :vms_excluded
 	
-	def initialize(ip, include, exclude)
-		raise 'server ip cannot be empty' if ip.to_s.empty?
-		self.ip = ip
-		self.vms_included = include || []
-		self.vms_excluded = exclude || []
+	def initialize(hostname, include = [], exclude = [])
+    raise "server's hostname cannot be empty" if hostname.to_s == ''
+		@hostname = hostname
+		@vms_included = include
+		@vms_excluded = exclude
 	end
 	
 	def all_vm?
-		# returns true if array is empty or definded to 'all'
-		self.vms_included.to_a.empty? || ['all', 'ALL', '*'].include?(self.vms_included)
+    case vms_included
+      when Array
+        vms_included.empty?
+      when String
+        vms_included.in?( %w(all ALL *) )
+      else
+        false
+    end
 	end
 end
+
 
 class Task
 	attr_accessor :name, :servers	
@@ -25,32 +33,33 @@ class Task
 	end
 end
 
+
 class Config
-	attr_accessor :tasks
-	attr_accessor :default_user
-	attr_accessor :log_level
+  class << self
+    def load(path)
+      ret = new
+      raw_yaml = YAML::load_file(path)
+
+      ret.log_level = raw_yaml['log_level']
+      ret.default_user = raw_yaml['default_user']
+      # load tasks
+      raw_yaml['tasks'].each do |k, v|
+        task = Task.new(k)
+        # associate servers
+        v.each { |vv| task.servers << TaskServer.new(vv['ip'], vv['include'], vv['exclude']) }
+        ret.tasks << task
+      end
+
+      return ret
+    end
+
+    private :new
+  end
+
+	attr_accessor :tasks, :default_user, :log_level
 	
 	def initialize
 		self.tasks = []
-	end
-	
-	def self.load(path)
-		ret = Config.new
-		raw_yaml = YAML::load_file(path)
-		
-		ret.log_level = raw_yaml['log_level']
-		ret.default_user = raw_yaml['default_user']
-		# load tasks
-		raw_yaml['tasks'].each {|k, v| 
-			task = Task.new(k)
-			# associate servers
-			v&.each {|vv|
-				task.servers << TaskServer.new(vv['ip'], vv['include'], vv['exclude'])
-			}
-			ret.tasks << task
-		}
-		
-		return ret
 	end
 	
 	def inspect
