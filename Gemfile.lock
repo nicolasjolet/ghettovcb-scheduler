@@ -1,18 +1,23 @@
 GIT
   remote: git://github.com/net-ssh/net-ssh.git
-  revision: 397f6a8a7fbe6862601b562c1cba64d19fa15a63
+  revision: d9671dc3a3133902af60ed95bee2c0e259496eb8
   specs:
-    net-ssh (4.0.0.beta3)
+    net-ssh (4.0.0.rc1)
 
 GEM
   remote: https://rubygems.org/
   specs:
+    net-scp (1.2.1)
+      net-ssh (>= 2.6.5)
+    sqlite3 (1.3.13-x64-mingw32)
 
 PLATFORMS
   x64-mingw32
 
 DEPENDENCIES
+  net-scp
   net-ssh!
+  sqlite3
 
 BUNDLED WITH
    1.13.6

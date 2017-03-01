@@ -1,23 +1,17 @@
-class Scheduler
-	def initialize(tasks)
-		@tasks = tasks
-	end
+module Scheduler
 
-  def run_tasks_server
-		# TODO: sanatize : ensure we do not backup same target (server+vm) in different tasks
-		threads = []
+  module_function
+  def run_tasks_server(tasks)
 
-		@tasks.each do |task|
-      threads << Thread.new do
+		tasks.map do |task|
+      Thread.new do
         task.servers.each do |server|
+
 				  yield server
         end
 			end
     end
-    threads.each(&:join)
+    .each(&:join) # wait all threads
 	end
-	
-	def length
-		@tasks.length
-	end	
+
 end
