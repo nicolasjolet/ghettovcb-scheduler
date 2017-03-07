@@ -1,56 +1,48 @@
 require 'ghettovcb-scheduler/server/ssh_server'
+require 'ghettovcb-scheduler/util/core_ext'
 
-class Hypervisor < SSHServer
-  attr_accessor :exclude_list, :include_list, :backup_server
+module HypervisorInterface
+  attr_reader :hostname
+  attr_accessor :exclude_list, :include_list, :backup_server, :user, :password
 
   def all_vm?
-    case vms_included
+    case @include_list
       when Array
-        vms_included.empty?
+        @include_list.empty?
       when String
-        vms_included.in?( %w(all ALL *) )
+        @include_list.in?(%w(all ALL *))
       else
         false
     end
   end
+end
 
-  class << self
-    def connect(server_def)
-      super(server_def.hostname, user: server_def.user) do |x|
-        x.exclude_list = server_def.vms_excluded || []
-        x.include_list = server_def.vms_included || []
-        yield x
-      end
+class HypervisorDef
+  include HypervisorInterface
+
+  def initialize(hostname, include: [], exclude: [], user: nil, password: nil, backup_server: nil)
+    raise "server's hostname cannot be empty" if hostname.to_s == ''
+    @hostname = hostname
+    @include_list = include
+    @exclude_list = exclude
+    @user = user
+    @password = password
+    @backup_server = backup_server
+  end
+
+  def connect
+    HypervisorConnected.connect(hostname, user: user) do |h|
+      h.exclude_list = exclude_list || []
+      h.include_list = include_list || []
+      h.backup_server = backup_server
+      h.password = password
+      yield h
     end
   end
+end
 
-  def copy_ghetto_script(local_path=File.expand_path('../../../bin/ghettovcb/ghettoVCB.sh', __dir__), remote_path='/tmp/ghettovcb/ghettoVCB.sh')
-    #@ssh_connection.scp.upload!(local_path, remote_path, recursive: true)  # removed because slow process
-    file_cp(local_path, target: remote_path)
-    # ensure executable flag is set
-    chmod(remote_path, mod: 'a+x')
-  end
-
-  def create_ghetto_config(config_path='/tmp/ghettovcb/ghettoVCB.conf')
-    config = [] << 'ENABLE_NON_PERSISTENT_NFS=1'  # Create NFS volume
-    config << 'UNMOUNT_NFS=1'                     # Unmount after backup
-    # TODO: use the server defined in the config
-    config << 'NFS_SERVER=10.69.0.20'
-    config << 'NFS_MOUNT=/var/share/backup-drop'
-    config << 'NFS_LOCAL_NAME=backup-drop'
-    config << 'NFS_VM_BACKUP_DIR=' + real_hostname
-    config << 'VM_BACKUP_ROTATION_COUNT=1'
-    config << 'ALLOW_VMS_WITH_SNAPSHOTS_TO_BE_BACKEDUP=1'
-    file_write(config_path, content: config)
-
-    # translate all id to vm_name
-    file_write('/tmp/ghettovcb/vmlist', content: tr_id_to_name(include_list)) unless all_vm?
-    file_write('/tmp/ghettovcb/vmblacklist', content: tr_id_to_name(exclude_list)) unless exclude_list.empty?
-  end
-
-  def get_nfs_mounts
-    execute_server_cmd("vim-cmd hostsvc/summary/fsvolume | grep ' NFS ' | cut -d ' ' -f1").stdout.split(/\n+/)
-  end
+class HypervisorConnected < SSHServer
+  include HypervisorInterface
 
   def get_ghetto_running_state
     return :inactive unless file_exists?('/tmp/ghettoVCB.work/pid')
@@ -65,7 +57,7 @@ class Hypervisor < SSHServer
   def exec_ghetto_script(script_path='/tmp/ghettovcb/ghettoVCB.sh')
     copy_ghetto_script
     create_ghetto_config
-    unmount_nfs('backup-drop') # even if it not exists, to ensure script runs fine
+    unmount_nfs('backup-drop') # even if it doesn't exist, to ensure script runs fine
     params = [] << '-g /tmp/ghettovcb/ghettoVCB.conf'
     if all_vm?
       params << '-a'
@@ -78,34 +70,65 @@ class Hypervisor < SSHServer
 
 
   private
-  def get_vm_name_from_id(id)
-    result = execute_server_cmd("vim-cmd vmsvc/get.summary '#{id}' | grep -o 'name = [^,]*'").stdout
 
-    raise CommandFailed, "Trying to get the VM name for the id #{id} has returned an empty result" if result.to_s == ''
-
-    # get then name from 'name = "NAME"'
-    result.match(/name = "(.*)"/).captures[0] or raise CommandFailed, "Trying to get the VM name for the id #{id} from #{result} has failed"
-  end
-
-  def tr_id_to_name(ids)
-    raise ArgumentError unless ids.is_a?(Array)
-
-    @association ||= execute_server_cmd('vim-cmd vmsvc/getallvms').stdout
-                         .split(/\n+/)                                    # convert newline to array
-                         .drop(1)                                         # skip header
-                         .inject({}) do |memo, x|
-                            _id = x[0,4].to_i                             # id + strip spaces
-                            memo[_id] = get_vm_name_from_id(_id)      # securely retrieve the name from the id
-                            memo
-                         end
-
-    ids.map do |x|
-      @association[x] || x
+    def copy_ghetto_script(local_path=File.expand_path('../../../bin/ghettovcb/ghettoVCB.sh', __dir__), remote_path='/tmp/ghettovcb/ghettoVCB.sh')
+      #@ssh_connection.scp.upload!(local_path, remote_path, recursive: true)  # removed because slow process
+      file_cp(local_path, target: remote_path)
+      # ensure executable flag is set
+      chmod(remote_path, mod: 'a+x')
     end
-  end
 
-  def unmount_nfs(nfs_name)
-    #TODO: use name from config
-    execute_server_cmd("vim-cmd hostsvc/datastore/destroy #{nfs_name}", exception_on_error: false)
-  end
+    def create_ghetto_config(config_path='/tmp/ghettovcb/ghettoVCB.conf')
+      config = [] << 'ENABLE_NON_PERSISTENT_NFS=1' # Create NFS volume
+      config << 'UNMOUNT_NFS=1' # Unmount after backup
+      config << "NFS_SERVER=#{backup_server}"
+      config << 'NFS_MOUNT=/var/share/backup-drop'
+      config << 'NFS_LOCAL_NAME=backup-drop'
+      config << 'NFS_VM_BACKUP_DIR=' + real_hostname
+      config << 'VM_BACKUP_ROTATION_COUNT=1' # number of backup to retain
+      config << 'ALLOW_VMS_WITH_SNAPSHOTS_TO_BE_BACKEDUP=1'
+      file_write(config_path, content: config)
+
+      # translate all id to vm_name
+      file_write('/tmp/ghettovcb/vmlist', content: tr_id_to_name(include_list)) unless all_vm?
+      file_write('/tmp/ghettovcb/vmblacklist', content: tr_id_to_name(exclude_list)) unless exclude_list.empty?
+    end
+
+    def get_nfs_mounts
+      execute_server_cmd("vim-cmd hostsvc/summary/fsvolume | grep ' NFS ' | cut -d ' ' -f1").stdout.split(/\n+/)
+    end
+
+    def get_vm_name_from_id(id)
+      # securely retrieve the name from the id
+      result = execute_server_cmd("vim-cmd vmsvc/get.summary '#{id}' | grep -o 'name = [^,]*'").stdout
+
+      raise CommandFailed, "Trying to get the VM name for the id #{id} has returned an empty result" if result.to_s == ''
+
+      # get then name from 'name = "NAME"'
+      result.match(/name = "(.*)"/).captures[0] or raise CommandFailed, "Trying to get the VM name for the id #{id} from #{result} has failed"
+    end
+
+    def tr_id_to_name(ids)
+      return nil if ids.nil?
+      raise ArgumentError unless ids.is_a?(Array)
+
+      @association ||= execute_server_cmd('vim-cmd vmsvc/getallvms').stdout
+        .split(/\n+/) # convert newline to array
+        .drop(1) # skip header
+        .inject({}) do |memo, x|
+         _id = x[0, 4].to_i # id + strip spaces
+         memo[_id] = x.scan(/^\d+\s+([^\[]+)/)[0][0].strip
+         #memo[_id] = get_vm_name_from_id(_id) # safer but very slow
+         memo
+        end
+
+      ids.map do |x|
+        @association[x] || x
+      end
+    end
+
+    def unmount_nfs(nfs_name)
+      #TODO: use name from config
+      execute_server_cmd("vim-cmd hostsvc/datastore/destroy #{nfs_name}", exception_on_error: false)
+    end
 end

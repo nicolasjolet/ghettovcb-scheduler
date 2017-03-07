@@ -2,18 +2,22 @@ require 'net/ssh'
 require 'net/scp'
 
 class SSHServer
+  attr_reader :hostname, :user
+
   class << self
     def connect(host, user:)
       raise ArgumentError, 'You need to provide a code block' unless block_given?
 
-      Net::SSH.start(host, user) { |ssh| yield new(ssh) }
+      Net::SSH.start(host, user) { |ssh| yield new(ssh, host, user) }
     end
 
     private :new
   end
 
-  def initialize(ssh_connection)
+  def initialize(ssh_connection, hostname, user)
     @ssh_connection = ssh_connection
+    @hostname = hostname
+    @user = user
   end
 
   def real_hostname

@@ -1,7 +1,6 @@
 require 'open3'
 
 
-
 class CommandFailed < StandardError; end
 class CommandExecutionFailed < StandardError; end
 
@@ -14,8 +13,6 @@ class CmdReturn
     end
   end
 end
-
-
 
 module LocalServer
   module_function
