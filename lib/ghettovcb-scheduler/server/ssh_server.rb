@@ -28,6 +28,10 @@ class SSHServer
     execute_server_cmd("mkdir -p '#{path}'")
   end
 
+  def rmdir!(path)
+    execute_server_cmd("rmdir '#{path}'")
+  end
+
   def chmod(path, mod:)
     execute_server_cmd("chmod #{mod} '#{path}'")
   end

@@ -1461,7 +1461,7 @@ if [[ "${WORKDIR}" == "/" ]]; then
     exit 1
 fi
 
-if mkdir "${WORKDIR}"; then
+if mkdir -p "${WORKDIR}"; then
     # create VM_FILE if we're backing up everything/specified a vm on the command line
     [[ $BACKUP_ALL_VMS -eq 1 ]] && touch ${VM_FILE}
     [[ -n "${VM_ARG}" ]] && echo "${VM_ARG}" > "${VM_FILE}"

@@ -9,7 +9,7 @@ module BackupServer
     end
 
     def move_to_vault(vault_path: '/var/backup-vault', backup_name:, backup_vms:)
-
+      nil.to_s
     end
   end
 

@@ -7,6 +7,7 @@ require 'ghettovcb-scheduler/util/config'
 require 'ghettovcb-scheduler/util/scheduler'
 require 'ghettovcb-scheduler/server/hypervisor'
 require 'ghettovcb-scheduler/server/backup_server'
+require 'ghettovcb-scheduler/util/mail'
 
 module App
 
@@ -29,31 +30,34 @@ module App
       # perform backups
       scheduler.run do |server_def|
         server_def.connect do |server|
-          App::logger.info("Backup start for #{server.real_hostname}")
+          logger.info("Backup start for #{server.real_hostname}")
 
           case server.get_ghetto_running_state
-            when :active
-              raise "GhettoVCB is already running on #{server.real_hostname}"
-            when :wrong
-              App::logger.warn("Ghetto working file is present but script is not running on #{server.real_hostname}")
-              App::logger.debug('=> Clean ghetto working directory')
-              server.fix_wrong_ghetto_state
+          when :active
+            raise "GhettoVCB is already running on #{server.real_hostname}"
+          when :wrong
+            logger.warn("Ghetto working file is present but script is not running on #{server.real_hostname}")
+            logger.debug('=> Clean ghetto working directory')
+            server.fix_wrong_ghetto_state
           end
 
-          server.exec_ghetto_script
+          logger.info('Saving to drop')
 
-          App::logger.info('Save to drop done')
+          server.save_to_drop
 
-          #App::logger.info('Archiving in vault')
+          logger.info('Saved to drop')
+
+          #logger.info('Archiving in vault')
 
           #BackupServer.move_to_vault(backup_name: server.real_hostname, )
 
-          #App::logger.info('Archiving in vault done')
+          #logger.info('Archived in vault')
         end
       end
 
     rescue => e
-      App::logger.fatal(e.message)
+      logger.fatal(e.message)
+      Mail.send("Error during backup : #{e.message}")
     end
 
   end

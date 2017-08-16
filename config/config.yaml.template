@@ -3,6 +3,9 @@ default:
   backup_server: 4.4.4.4
 # possible values : UNKNOWN, FATAL, ERROR, WARN, INFO, DEBUG
 log_level: ERROR
+mail_from: from@from.com
+rcpt_to: to@to.com
+smtp_host: smtp.host.com
 tasks:
     task1:
     -   ip: 1.1.1.1
