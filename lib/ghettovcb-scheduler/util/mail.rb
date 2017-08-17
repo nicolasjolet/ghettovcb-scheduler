@@ -6,7 +6,7 @@ module Mail
 
     def send(message)
       Net::SMTP.start(smtp_host) do |smtp|
-        smtp.send_message "From: #{mail_from}\r\nSubject: Backup\r\n#{message}", mail_from, rcpt_to
+        smtp.send_message("From: #{mail_from}\r\nSubject: Backup\r\n#{message}", mail_from, rcpt_to)
       end
     end
   end
