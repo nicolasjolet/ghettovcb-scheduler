@@ -27,6 +27,8 @@ module App
       # check available size on backup server
       logger.debug { "Backup server free space: #{BackupServer.free_space}" } unless Gem.win_platform?
 
+      Mail.send("Backup start", rcpt: 'ava@lisam.com')
+
       # perform backups
       scheduler.run do |server_def|
         server_def.connect do |server|
@@ -54,6 +56,8 @@ module App
           #logger.info('Archived in vault')
         end
       end
+
+      Mail.send("Backup finished", rcpt: 'ava@lisam.com')
 
     rescue => e
       logger.fatal(e.message)
