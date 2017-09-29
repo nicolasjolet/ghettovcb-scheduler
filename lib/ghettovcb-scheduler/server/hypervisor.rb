@@ -3,7 +3,7 @@ require 'ghettovcb-scheduler/util/core_ext'
 
 module HypervisorInterface
   attr_reader :hostname
-  attr_accessor :exclude_list, :include_list, :backup_server, :user, :password
+  attr_accessor :exclude_list, :include_list, :user, :password, :backup_server
 
   def all_vm?
     case @include_list
@@ -65,7 +65,13 @@ class HypervisorConnected < SSHServer
     execute_server_cmd(script_path + ' ' + params.join(' '))
   end
 
+  def get_final_vm_list_translated
+    include = all_vm? ? get_all_vm_n_id.values : tr_id_to_name(include_list)
+    exclude = tr_id_to_name(exclude_list)
+    include - exclude
+  end
 
+  #**************************************************************************************************#
   private
 
   def copy_ghetto_script(local_path=File.expand_path('../../../bin/ghettovcb/ghettoVCB.sh', __dir__), remote_path='/tmp/ghettovcb/ghettoVCB.sh')
@@ -109,23 +115,25 @@ class HypervisorConnected < SSHServer
     result.match(/name = "(.*)"/).captures[0] or raise CommandFailed, "Trying to get the VM name for the id #{id} from #{result} has failed"
   end
 
+  def get_all_vm_n_id
+    @association ||= execute_server_cmd('vim-cmd vmsvc/getallvms')
+        .stdout
+        .split(/\n+/) # convert newline to array
+        .drop(1) # skip header
+        .inject({}) do |memo, x|
+          id = x[0, 4].to_i # id + strip spaces
+          memo[id] = x.scan(/^\d+\s+([^\[]+)/)[0][0].strip
+          # memo[id] = get_vm_name_from_id(_id) # safer but very slow
+          memo
+        end
+  end
+
   def tr_id_to_name(ids)
     return nil if ids.nil?
     raise ArgumentError unless ids.is_a?(Array)
 
-    @association ||= execute_server_cmd('vim-cmd vmsvc/getallvms')
-      .stdout
-      .split(/\n+/) # convert newline to array
-      .drop(1) # skip header
-      .inject({}) do |memo, x|
-        id = x[0, 4].to_i # id + strip spaces
-        memo[id] = x.scan(/^\d+\s+([^\[]+)/)[0][0].strip
-        # memo[_id] = get_vm_name_from_id(_id) # safer but very slow
-        memo
-      end
-
     ids.map do |x|
-      @association[x] || x
+      get_all_vm_n_id[x] || x
     end
   end
 

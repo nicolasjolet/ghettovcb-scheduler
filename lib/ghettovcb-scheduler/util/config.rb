@@ -2,6 +2,7 @@ require 'yaml'
 require 'ghettovcb-scheduler/util/scheduler'
 require 'ghettovcb-scheduler/server/hypervisor'
 require 'ghettovcb-scheduler/util/mail'
+require 'ghettovcb-scheduler/util/log'
 
 module Config
   module_function
@@ -9,12 +10,22 @@ module Config
   def load(path)
     raw_yaml = YAML.load_file(path)
 
-    App.logger.level = Logger.const_get(raw_yaml['log_level'])
-
     default = raw_yaml['default']
-    Mail.rcpt_to = raw_yaml['rcpt_to']
-    Mail.mail_from = raw_yaml['mail_from']
-    Mail.smtp_host = raw_yaml['smtp_host']
+    Mail.mail_from = raw_yaml['smtp']['mail_from']
+    Mail.smtp_host = raw_yaml['smtp']['host']
+
+    Log.level = raw_yaml['log']['level']
+    raw_yaml['log']['listeners'].each do |i|
+      if i['mail']
+        Log.listeners.add_mail(i['threshold'], rcpt_to: i['mail'])
+      elsif i['file']
+        Log.listeners.add_file(i['threshold'], file_path: i['file'])
+      elsif i['console']
+        Log.listeners.add_console(i['threshold'])
+      else
+          raise ParseError, 'unknown listener defined'
+      end
+    end
 
     App.scheduler.tasks = raw_yaml['tasks'].map do |(k, v)|
       Task.new(name: k,
@@ -25,7 +36,7 @@ module Config
                                    user: vv['user'] || default['user'],
                                    password: vv['password'] || default['password'],
                                    backup_server: vv['backup_server'] || default['backup_server']
-                 )
+                                  )
                end
       )
     end
