@@ -71,24 +71,14 @@ class Listeners
 end
 
 module Log
-  include Logger::Severity
   @listeners = Listeners.new
-  @level = ERROR
 
   class << self
     include Logger::Severity
-    attr_reader :level, :listeners
-
-    def level=(severity)
-      @level = severity
-    end
+    attr_reader :listeners
 
     def mail_subject=(subject)
       Mail.subject = subject
-    end
-
-    def write(severity = nil, message)
-      @listeners.write(level: severity, message: message)
     end
 
     def debug(message)
@@ -109,6 +99,11 @@ module Log
 
     def fatal(message)
       write(FATAL, message)
+    end
+
+    private
+    def write(severity = nil, message)
+      @listeners.write(level: severity, message: message)
     end
   end
 end

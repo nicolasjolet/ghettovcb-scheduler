@@ -11,10 +11,10 @@ module Config
     raw_yaml = YAML.load_file(path)
 
     default = raw_yaml['default']
+
     Mail.mail_from = raw_yaml['smtp']['mail_from']
     Mail.smtp_host = raw_yaml['smtp']['host']
 
-    Log.level = raw_yaml['log']['level']
     raw_yaml['log']['listeners'].each do |i|
       if i['mail']
         Log.listeners.add_mail(i['threshold'], rcpt_to: i['mail'])
