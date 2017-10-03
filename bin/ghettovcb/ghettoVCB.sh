@@ -267,7 +267,7 @@ sanityCheck() {
     ESX_RELEASE=$(uname -r)
 
     case "${ESX_VERSION}" in
-        6.0.0)                VER=6; break;;
+        6.0.0|6.5.0)          VER=6; break;;
         5.0.0|5.1.0|5.5.0)    VER=5; break;;
         4.0.0|4.1.0)          VER=4; break;;
         3.5.0|3i)             VER=3; break;;
@@ -413,7 +413,7 @@ findVMDK() {
 
 getVMDKs() {
     #get all VMDKs listed in .vmx file
-    VMDKS_FOUND=$(grep -iE '(^scsi|^ide|^sata)' "${VMX_PATH}" | grep -i fileName | awk -F " " '{print $1}')
+    VMDKS_FOUND=$(grep -iE '(^scsi|^ide|^sata|^nvme)' "${VMX_PATH}" | grep -i fileName | awk -F " " '{print $1}')
 
     VMDKS=
     INDEP_VMDKS=
@@ -695,7 +695,7 @@ storageInfo() {
         fi
     fi
 
-logger "debug" ""
+	logger "debug" ""
 }
 
 powerOff() {
@@ -778,7 +778,7 @@ ghettoVCB() {
             #1 = readonly
             #0 = readwrite
             logger "debug" "Mounting NFS: ${NFS_SERVER}:${NFS_MOUNT} to /vmfs/volume/${NFS_LOCAL_NAME}"
-	    if [[ ${ESX_RELEASE} == "5.5.0" ]] || [[ ${ESX_RELEASE} == "6.0.0" ]] ; then
+	    if [[ ${ESX_RELEASE} == "5.5.0" ]] || [[ ${ESX_RELEASE} == "6.0.0" || ${ESX_RELEASE} == "6.5.0" ]] ; then
                 ${VMWARE_CMD} hostsvc/datastore/nas_create "${NFS_LOCAL_NAME}" "${NFS_VERSION}" "${NFS_MOUNT}" 0 "${NFS_SERVER}"
             else
                 ${VMWARE_CMD} hostsvc/datastore/nas_create "${NFS_LOCAL_NAME}" "${NFS_SERVER}" "${NFS_MOUNT}" 0
@@ -827,7 +827,7 @@ ghettoVCB() {
     for VM_NAME in $(cat "${VM_INPUT}" | grep -v "#" | sed '/^$/d' | sed -e 's/^[[:blank:]]*//;s/[[:blank:]]*$//'); do
         IGNORE_VM=0
         if [[ "${EXCLUDE_SOME_VMS}" -eq 1 ]] ; then
-            grep -E "^${VM_NAME}" "${VM_EXCLUSION_FILE}" > /dev/null 2>&1
+            grep "^${VM_NAME}" "${VM_EXCLUSION_FILE}" > /dev/null 2>&1
             if [[ $? -eq 0 ]] ; then
                 IGNORE_VM=1
                 #VM_FAILED=0   #Excluded VM is NOT a failure. No need to set here, but listed for clarity
@@ -843,7 +843,8 @@ ghettoVCB() {
             fi
         fi
 
-        VM_ID=$(grep -E "\"${VM_NAME}\"" ${WORKDIR}/vms_list | awk -F ";" '{print $1}' | sed 's/"//g')
+		# dont use regex in case of parentheses in vm name
+        VM_ID=$(grep "\"${VM_NAME}\"" ${WORKDIR}/vms_list | awk -F ";" '{print $1}' | sed 's/"//g')
 
         #ensure default value if one is not selected or variable is null
         if [[ -z ${VM_BACKUP_DIR_NAMING_CONVENTION} ]] ; then
@@ -855,8 +856,8 @@ ghettoVCB() {
             dumpVMConfigurations
         fi
 
-        VMFS_VOLUME=$(grep -E "\"${VM_NAME}\"" ${WORKDIR}/vms_list | awk -F ";" '{print $3}' | sed 's/\[//;s/\]//;s/"//g')
-        VMX_CONF=$(grep -E "\"${VM_NAME}\"" ${WORKDIR}/vms_list | awk -F ";" '{print $4}' | sed 's/\[//;s/\]//;s/"//g')
+        VMFS_VOLUME=$(grep "\"${VM_NAME}\"" ${WORKDIR}/vms_list | awk -F ";" '{print $3}' | sed 's/\[//;s/\]//;s/"//g')
+        VMX_CONF=$(grep "\"${VM_NAME}\"" ${WORKDIR}/vms_list | awk -F ";" '{print $4}' | sed 's/\[//;s/\]//;s/"//g')
         VMX_PATH="/vmfs/volumes/${VMFS_VOLUME}/${VMX_CONF}"
         VMX_DIR=$(dirname "${VMX_PATH}")
 
@@ -864,7 +865,7 @@ ghettoVCB() {
         if [[ ! -z ${VM_ID} ]] && [[ "${LOG_LEVEL}" != "dryrun" ]]; then
             storageInfo "before"
         fi
-
+	
         #ignore VM as it's in the exclusion list or was on problem list
         if [[ "${IGNORE_VM}" -eq 1 ]] ; then
             logger "debug" "Ignoring ${VM_NAME} for backup since it is located in exclusion file or problem list\n"
@@ -1252,7 +1253,7 @@ ghettoVCB() {
         logger "debug" "VM Startup Order: ${VM_STARTUP_ORDER}\n"
         IFS=","
         for VM_NAME in ${VM_STARTUP_ORDER}; do
-            VM_ID=$(grep -E "\"${VM_NAME}\"" ${WORKDIR}/vms_list | awk -F ";" '{print $1}' | sed 's/"//g')
+            VM_ID=$(grep "\"${VM_NAME}\"" ${WORKDIR}/vms_list | awk -F ";" '{print $1}' | sed 's/"//g')
             powerOn "${VM_NAME}" "${VM_ID}"
             if [[ ${POWER_ON_EC} -eq 1 ]]; then
                 logger "info" "Unable to detect fully powered on VM ${VM_NAME}\n"

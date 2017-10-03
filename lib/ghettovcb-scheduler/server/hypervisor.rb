@@ -90,6 +90,7 @@ class HypervisorConnected < SSHServer
     config << 'NFS_VM_BACKUP_DIR=' + real_hostname
     config << 'VM_BACKUP_ROTATION_COUNT=1' # number of backup to retain
     config << 'ALLOW_VMS_WITH_SNAPSHOTS_TO_BE_BACKEDUP=1'
+    config << 'LOG_LEVEL="debug"'
     file_write(config_path, content: config)
 
     # translate all id to vm_name

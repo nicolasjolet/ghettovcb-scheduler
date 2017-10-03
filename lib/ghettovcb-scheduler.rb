@@ -33,11 +33,11 @@ module App
     def run
       load_config
 
+      Log.mail_subject = 'ghettoVCB scheduler'
       Log.info('Global Backup Start')
 
       scheduler.run_n_connect do |server|
         Log.info("Backup start for #{server.real_hostname} -- " + server.include_list.first)
-        Log.mail_subject = "Backup of #{server.real_hostname}"
 
         check_ghetto_status(server)
         server.save_to_drop
