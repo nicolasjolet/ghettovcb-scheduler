@@ -35,7 +35,6 @@ module App
 
       Log.info('Global Backup Start')
 
-      # perform backups
       scheduler.run_n_connect do |server|
         Log.info("Backup start for #{server.real_hostname} -- " + server.include_list.first)
         Log.mail_subject = "Backup of #{server.real_hostname}"
@@ -43,7 +42,7 @@ module App
         check_ghetto_status(server)
         server.save_to_drop
 
-        Log.info("Backup finished for #{server.real_hostname}")
+        Log.info("Backup finished for #{server.real_hostname} -- " + server.include_list.first)
 
         #BackupServer.move_to_vault(backup_name: server.real_hostname, )
       end

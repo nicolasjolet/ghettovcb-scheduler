@@ -13,7 +13,7 @@ class Scheduler
   attr_accessor :tasks
 
   def run
-    tasks.map do |task|
+    threads = tasks.map do |task|
       task.status = :running
       Thread.new do
         task.servers.each do |server|
@@ -22,7 +22,7 @@ class Scheduler
         task.status = :done
       end
     end
-        .each(&:join) # wait all threads
+    threads.each(&:join) # wait all threads
   end
 
   def run_n_connect
