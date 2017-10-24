@@ -27,6 +27,8 @@ module App
           Log.warn("Ghetto working file is present but script is not running on #{server.real_hostname}")
           Log.debug('=> Clean ghetto working directory')
           server.fix_wrong_ghetto_state
+        else
+          Log.debug('Ghetto state ok')
       end
     end
 
@@ -40,10 +42,14 @@ module App
         Log.info("Backup start for #{server.real_hostname} -- " + server.include_list.first)
 
         check_ghetto_status(server)
-        server.save_to_drop
-
-        Log.info("Backup finished for #{server.real_hostname} -- " + server.include_list.first)
-
+        begin
+          server.save_to_drop
+        rescue
+          Log.error("Backup failed for #{server.real_hostname} -- " + server.include_list.first + "\r\n" +
+          "Last Ghetto Log :" + "\r\n" + server.get_latest_log)
+        else
+          Log.info("Backup finished for #{server.real_hostname} -- " + server.include_list.first)
+        end
         #BackupServer.move_to_vault(backup_name: server.real_hostname, )
       end
 

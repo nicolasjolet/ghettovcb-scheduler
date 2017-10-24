@@ -37,7 +37,7 @@ class Listeners
 
   def write(level: nil, message:)
     _level = convert_severity(level)
-    filtered_items = @items.select {|l| _level.nil? || l.level < _level}
+    filtered_items = @items.select {|l| _level.nil? || l.level <= _level}
     filtered_items.each do |l|
       case l.listen_to
         when Mail then
