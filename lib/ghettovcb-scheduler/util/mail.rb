@@ -13,7 +13,10 @@ class Mail
 
   def send(message, subject: nil)
     Net::SMTP.start(Mail.smtp_host) do |smtp|
-      smtp.send_message("From: #{Mail.mail_from}\r\nSubject: #{subject || Mail.subject}\r\n#{message}", Mail.mail_from, rcpt_to)
+      smtp.send_message("From: #{Mail.mail_from}\n"\
+                        "Subject: #{Mail.subject}#{subject}\n"\
+                        "#{message}",
+                         Mail.mail_from, rcpt_to)
     end
   end
 end

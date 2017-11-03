@@ -1,6 +1,7 @@
 smtp:
   host: 1.2.3.4
   mail_from: your@mail.com
+  subject: "Ghetto backup -- "
 
 log:
   # possible values : FATAL, ERROR, WARN, INFO, DEBUG

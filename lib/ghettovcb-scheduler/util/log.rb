@@ -35,15 +35,15 @@ class Listeners
     add(level, Logger.new(file_path))
   end
 
-  def write(level: nil, message:)
+  def write(level: nil, message:, details: nil)
     _level = convert_severity(level)
     filtered_items = @items.select {|l| _level.nil? || l.level <= _level}
     filtered_items.each do |l|
       case l.listen_to
         when Mail then
-          l.listen_to.send(message)
+          l.listen_to.send(details, subject: severity_to_s(level) + ' -- ' + message)
         when Logger then
-          l.listen_to.add(level, message)
+          l.listen_to.add(level, message + (details && "\r\n" + details).to_s)
       end
     end
   end
@@ -55,18 +55,13 @@ class Listeners
 
   def convert_severity(severity)
     return severity if severity.is_a?(Integer)
-    return UNKNOWN if severity.nil?
+    Logger::Severity.const_get(severity.to_s.upcase)
+  end
 
-    case severity.to_s.downcase
-      when 'debug'.freeze then DEBUG
-      when 'info'.freeze then INFO
-      when 'warn'.freeze then WARN
-      when 'error'.freeze then ERROR
-      when 'fatal'.freeze then FATAL
-      when 'unknown'.freeze then UNKNOWN
-      else
-        raise ArgumentError, "invalid severity : #{severity}"
-    end
+  def severity_to_s(severity)
+    return severity if severity.is_a?(String)
+
+    Logger::Severity.constants.find { |k| Logger::Severity.const_get(k) == severity}.to_s
   end
 end
 
@@ -81,29 +76,29 @@ module Log
       Mail.subject = subject
     end
 
-    def debug(message)
-      write(DEBUG, message)
+    def debug(message, details = nil)
+      write(DEBUG, message, details: details)
     end
 
-    def info(message)
-      write(INFO, message)
+    def info(message, details = nil)
+      write(INFO, message, details: details)
     end
 
-    def warn(message)
-      write(WARN, message)
+    def warn(message, details = nil)
+      write(WARN, message, details: details)
     end
 
-    def error(message)
-      write(ERROR, message)
+    def error(message, details = nil)
+      write(ERROR, message, details: details)
     end
 
-    def fatal(message)
-      write(FATAL, message)
+    def fatal(message, details = nil)
+      write(FATAL, message, details: details)
     end
 
     private
-    def write(severity = nil, message)
-      @listeners.write(level: severity, message: message)
+    def write(severity = nil, message, details: nil)
+      @listeners.write(level: severity, message: message, details: details)
     end
   end
 end

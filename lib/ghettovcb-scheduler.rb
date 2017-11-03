@@ -35,18 +35,16 @@ module App
     def run
       load_config
 
-      Log.mail_subject = 'ghettoVCB scheduler'
       Log.info('Global Backup Start')
 
       scheduler.run_n_connect do |server|
         Log.info("Backup start for #{server.real_hostname} -- " + server.include_list.first)
 
-        check_ghetto_status(server)
         begin
+          check_ghetto_status(server)
           server.save_to_drop
         rescue
-          Log.error("Backup failed for #{server.real_hostname} -- " + server.include_list.first + "\r\n" +
-          "Last Ghetto Log :" + "\r\n" + server.get_latest_log)
+          Log.error("Backup failed for #{server.real_hostname} -- " + server.include_list.first, "Last Ghetto Log :" + "\r\n" + server.get_latest_log)
         else
           Log.info("Backup finished for #{server.real_hostname} -- " + server.include_list.first)
         end

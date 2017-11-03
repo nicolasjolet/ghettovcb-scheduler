@@ -14,6 +14,7 @@ module Config
 
     Mail.mail_from = raw_yaml['smtp']['mail_from']
     Mail.smtp_host = raw_yaml['smtp']['host']
+    Mail.subject = raw_yaml['smtp']['subject']
 
     raw_yaml['log']['listeners'].each do |i|
       if i['mail']
