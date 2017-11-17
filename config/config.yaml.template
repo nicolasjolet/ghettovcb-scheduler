@@ -16,6 +16,7 @@ log:
 default:
   user: backup
   backup_server: 1.2.3.4
+  history: 1
 
 tasks:
     task1:
